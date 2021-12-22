@@ -62,7 +62,7 @@ contract Staking is Ownable,IStaking{
     /**
      * @dev isStaker to check the staker  
      */
-    function isStaker(address _user) public view returns(bool){
+    function isStaker(address _user) public override view returns(bool){
         return stakerInfo[_user].owner == _user? true:false;
         
     }
