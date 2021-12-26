@@ -33,7 +33,15 @@ contract Policy is Ownable{
     mapping(address=> uint256[])  public policyIDList; 
     mapping(uint256 => policy) public policyInfo;
     mapping(address => mapping(uint256 => uint256)) public stakerInBlock; // user => pid => inBlock
+    mapping(address => mapping(uint256 => uint256)) public stakerHavestBlock; // user => pid => inBlock
     mapping(uint256 => address[]) public policyStakerList;
+    mapping(uint256 => mapping(address => bool)) public isPolicyStaker;
+    
+    
+    modifier onlyPolicyStaker(uint256 _pid){
+        require(isPolicyStaker[_pid][msg.sender],"only policy staker");
+        _;
+    }
     
     constructor(IStaking _staking,IERC20 _rewardToken) {
         //require(_staking.isContract(),"only staking is controller");
@@ -68,6 +76,7 @@ contract Policy is Ownable{
         
         for(uint256 i=0; i< _stakerAddress.length; i++){
             policyStakerList[pID].push(_stakerAddress[i]);
+            isPolicyStaker[pID][_stakerAddress[i]] = true;
         }
         
         
@@ -96,14 +105,20 @@ contract Policy is Ownable{
     /**
      * @dev joinPolicy staker need join policy can get reward 
      */
-    function joinPolicy(uint256 _pid) public{
+    function joinPolicy(uint256 _pid) public onlyPolicyStaker(_pid){
+        policy storage pl = policyInfo[_pid];
+        require(pl.cancelBlock == 0,"policy is cancel");
+        require(pl.creater != address(0),"policy not creater");
+        require(pl.end > block.number,"plocy is end");
         
+        stakerInBlock[msg.sender][_pid] = block.number;
+        stakerHavestBlock[msg.sender][_pid] = block.number;
     }
     
     /**
      * @dev harvest staker can havest reward  
      */
-    function harvest(uint256 _pid) public{
+    function harvest(uint256 _pid) public onlyPolicyStaker(_pid){
         
     }
     
