@@ -25,6 +25,7 @@ contract Policy is Ownable{
         uint256 rewardBalnce; //
         uint256 begin;
         uint256 end;
+        uint256 cancelBlock;
         address[] stakers;
     }
     
@@ -32,7 +33,7 @@ contract Policy is Ownable{
     mapping(address=> uint256[])  public policyIDList; 
     mapping(uint256 => policy) public policyInfo;
     mapping(address => mapping(uint256 => uint256)) public stakerInBlock; // user => pid => inBlock
-    
+    mapping(uint256 => address[]) public policyStakerList;
     
     constructor(IStaking _staking,IERC20 _rewardToken) {
         //require(_staking.isContract(),"only staking is controller");
@@ -50,7 +51,6 @@ contract Policy is Ownable{
         require(_end > _begin && _begin >= block.number,"create begin and end is illegal");
         require(_rewardBalance > 0,"reward balance must big zero");
         
-        
         pID+= pID;
         
         rewardToken.safeTransferFrom(msg.sender,address(this),_rewardBalance);
@@ -61,16 +61,37 @@ contract Policy is Ownable{
             rewardBalnce : _rewardBalance,
             begin : _begin,
             end : _end,
+            cancelBlock : 0,
             stakers : _stakerAddress
         });
+        
+        
+        for(uint256 i=0; i< _stakerAddress.length; i++){
+            policyStakerList[pID].push(_stakerAddress[i]);
+        }
+        
+        
+        
     }
     
     /**
      * @dev cancelPolicy any user can cancel ther policy 
      */
     function cancelPolicy(uint256 _pid) public{
+        policy storage pl = policyInfo[_pid];
+        require(pl.creater == msg.sender,"this create not right");
+        require(pl.cancelBlock == 0,"alread canceled ");
+        uint256 endblock = block.number > pl.end ? pl.end : block.number;
         
+        uint256 calcRewardBalance = calcReward(_pid);
+        
+        pl.cancelBlock = endblock;
+        
+        if(pl.rewardBalnce >= calcRewardBalance){
+            rewardToken.safeTransfer(msg.sender,pl.rewardBalnce.sub(calcRewardBalance));
+        }
     }
+
     
     /**
      * @dev joinPolicy staker need join policy can get reward 
@@ -95,7 +116,32 @@ contract Policy is Ownable{
         return true;
     }
     
-    
+    /**
+     * @dev calcReward Calculate how much reward needs to be spent based on the current block  
+     */
+    function calcReward(uint256 _pid) public view returns(uint256 castReward) {
+        policy memory pl = policyInfo[_pid];
+        uint256 thisEndBlock = block.number;
+        if(pl.cancelBlock != 0){
+            return 0;
+        }
+        if(pl.rewardBalnce > 0){
+            if(pl.stakers.length > 0){
+                uint256 blockReward = pl.rewardBalnce.div(pl.end.sub(pl.begin)).div(pl.stakers.length);
+                
+                uint256 inBlock;
+                for(uint256 i=0; i< policyStakerList[_pid].length;i++){
+                    inBlock = stakerInBlock[policyStakerList[_pid][i]][_pid];
+                    
+                    if(thisEndBlock > inBlock && inBlock != 0){
+                        castReward = castReward.add(thisEndBlock.sub(inBlock).mul(blockReward));
+                    }
+                    
+                }
+            }
+           
+        }
+    }
     
     
 }
