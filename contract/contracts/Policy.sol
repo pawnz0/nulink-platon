@@ -119,7 +119,12 @@ contract Policy is Ownable{
      * @dev harvest staker can havest reward  
      */
     function harvest(uint256 _pid) public onlyPolicyStaker(_pid){
+        policy memory pl = policyInfo[_pid];
+        uint256 reward = calcStakerReward(_pid,msg.sender);
         
+        require(reward <= pl.rewardBalnce,"reward calc error");
+        stakerHavestBlock[msg.sender][_pid] = block.number;
+        rewardToken.safeTransfer(msg.sender,reward);
     }
     
     function checkStaker(address[] memory stakerAddress) view internal returns(bool){
@@ -155,6 +160,24 @@ contract Policy is Ownable{
                 }
             }
            
+        }
+    }
+    
+    function calcStakerReward(uint256 _pid,address _staker) public view returns(uint256 reward) {
+        policy memory pl = policyInfo[_pid];
+        uint256 thisEndBlock = pl.cancelBlock != 0 ? pl.cancelBlock : block.number;
+        thisEndBlock = thisEndBlock > pl.end ? pl.end : thisEndBlock;
+        if(pl.rewardBalnce > 0){
+            if(pl.stakers.length > 0){
+                uint256 blockReward = pl.rewardBalnce.div(pl.end.sub(pl.begin)).div(pl.stakers.length);
+                uint256 inBlock = stakerHavestBlock[_staker][_pid] > stakerInBlock[_staker][_pid] ? stakerHavestBlock[_staker][_pid] : stakerInBlock[_staker][_pid];
+                
+                if(thisEndBlock > inBlock){
+                    reward = thisEndBlock.sub(inBlock).mul(blockReward);
+                }
+                 
+            }
+        
         }
     }
     
