@@ -18,11 +18,28 @@ contract Staking is Ownable,IStaking{
     uint256 totalReward;
     
     mapping(address => staker) public stakerInfo;
+    mapping(address => bool) public managers;
 
-    constructor (IERC20 _stakeToken, uint256 _stakaAmount, uint256 _totalReward){
+    constructor (IERC20 _stakeToken, address _manager, uint256 _stakaAmount, uint256 _totalReward){
         sToken = _stakeToken;
+        managers[msg.sender] = true;
+        managers[_manager] = true;
         stakeAmount = _stakaAmount;
-        totalReward = totalReward;
+        totalReward = _totalReward;
+    }
+
+    modifier onlyManager() {
+        require(isManager(msg.sender), "FORBIDDEN");
+        _;
+    }
+
+    function isManager(address _sender) view public returns (bool){
+        return managers[_sender];
+    }
+
+    function setTotalReword(uint256 _totalReward) public onlyManager {
+        // require(_totalReward > 0, "total reward must be greater than 0");
+        totalReward = _totalReward;
     }
     
     /**
