@@ -9,6 +9,7 @@ interface IStaking{
         IERC20   stakeToken;
         uint256   stakeBalance;
         uint256   workcount;
+        bool isWork;
     }
 
     
