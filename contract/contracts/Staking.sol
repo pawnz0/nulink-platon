@@ -14,14 +14,16 @@ contract Staking is Ownable,IStaking{
     IERC20 sToken; // stake Token
     
      //@stakeAmount to be staker need staking amount .
-    uint256 stakeAmount; 
+    uint256 stakeAmount;
+    uint256 totalReward;
     
     mapping(address => staker) public stakerInfo;
-    
-    constructor (IERC20 _stakeToken,uint256 _stakaAmount){
+
+    constructor (IERC20 _stakeToken, uint256 _stakaAmount, uint256 _totalReward){
         sToken = _stakeToken;
         stakeAmount = _stakaAmount;
-    } 
+        totalReward = totalReward;
+    }
     
     /**
      * @dev newStaker is user to be a new staker 
