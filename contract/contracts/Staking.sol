@@ -44,6 +44,24 @@ contract Staking is Ownable,IStaking{
         //transfer
         sToken.safeTransferFrom(msg.sender,address(this),stakeAmount);
     }
+
+    /**
+    * @dev updateStaker
+     */
+    function updateStaker(address _owner, uint256 _balance, uint8 _workCount, bool _isWork) public {
+        require(_balance > 0, "stake balance not set");
+
+        staker memory newStaker;
+        newStaker = staker({
+            owner: _owner,
+            stakeToken: sToken,
+            stakeBalance: _balance,
+            workcount: _workCount,
+            isWork: _isWork
+        });
+
+        stakerInfo[_owner] = newStaker;
+    }
     
     /**
      * @dev leaveStaker is user to leave staker 
