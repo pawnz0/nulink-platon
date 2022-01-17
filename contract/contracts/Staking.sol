@@ -12,12 +12,14 @@ contract Staking is Ownable,IStaking{
     using SafeERC20 for IERC20;
     
     IERC20 sToken; // stake Token
-    
+
      //@stakeAmount to be staker need staking amount .
     uint256 stakeAmount;
     uint256 totalReward;
-    
+    uint256 totalStakeBalance;
+
     mapping(address => staker) public stakerInfo;
+    mapping(address => uint256) public stakerReward;
     mapping(address => bool) public managers;
 
     constructor (IERC20 _stakeToken, address _manager, uint256 _stakaAmount, uint256 _totalReward){
@@ -80,6 +82,9 @@ contract Staking is Ownable,IStaking{
         });
 
         stakerInfo[_owner] = newStaker;
+        totalStakeBalance += _balance;
+        // reward
+        reward(_owner, _balance);
     }
     
     /**
@@ -112,7 +117,12 @@ contract Staking is Ownable,IStaking{
         sToken = _stakeToken;
         stakeAmount = _stakaAmount;
     }
-    
-     
-    
+
+    function reward(address _owner, uint256 _stakeBalance) public {
+        if (totalReward == 0 || _stakeBalance == 0){
+            return;
+        }
+        stakerReward[_owner] = totalReward * _stakeBalance / totalStakeBalance;
+    }
+
 }
