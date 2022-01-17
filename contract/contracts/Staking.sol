@@ -125,4 +125,10 @@ contract Staking is Ownable,IStaking{
         stakerReward[_owner] = totalReward * _stakeBalance / totalStakeBalance;
     }
 
+    function claim(uint64 amount) public {
+        require(stakerReward[msg.sender] >= amount, "insufficient balance");
+
+        sToken.safeTransferFrom(address(this), msg.sender,stakeAmount);
+        stakerReward[msg.sender] -= amount;
+    }
 }
