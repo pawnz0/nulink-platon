@@ -15,8 +15,8 @@ contract Staking is Ownable,IStaking{
 
      //@stakeAmount to be staker need staking amount .
     uint256 stakeAmount;
-    uint256 totalReward;
-    uint256 totalStakeBalance;
+    uint256 public totalReward;
+    uint256 public totalStakeBalance;
 
     mapping(address => staker) public stakerInfo;
     mapping(address => uint256) public stakerReward;
@@ -57,7 +57,8 @@ contract Staking is Ownable,IStaking{
             owner : msg.sender,
             stakeToken : sToken,
             stakeBalance: stakeAmount,
-            workcount:0
+            workcount:0,
+            isWork: true
         });
         
         stakerInfo[msg.sender] = lockstaker;
@@ -72,7 +73,10 @@ contract Staking is Ownable,IStaking{
     function updateStaker(address _owner, uint256 _balance, uint8 _workCount, bool _isWork) public {
         require(_balance > 0, "stake balance not set");
 
+        bool isFirst = false;
+        uint256 reward;
         staker memory newStaker;
+
         newStaker = staker({
             owner: _owner,
             stakeToken: sToken,
@@ -82,9 +86,18 @@ contract Staking is Ownable,IStaking{
         });
 
         stakerInfo[_owner] = newStaker;
-        totalStakeBalance += _balance;
-        // reward
-        reward(_owner, _balance);
+        if (totalStakeBalance == 0) {
+            totalStakeBalance += _balance;
+            isFirst = true;
+        }
+
+        reward = calcReward(totalStakeBalance, _balance);
+        if (reward != 0) {
+            stakerReward[_owner] += reward;
+        }
+        if (!isFirst) {
+            totalStakeBalance += _balance;
+        }
     }
     
     /**
@@ -118,17 +131,18 @@ contract Staking is Ownable,IStaking{
         stakeAmount = _stakaAmount;
     }
 
-    function reward(address _owner, uint256 _stakeBalance) public {
-        if (totalReward == 0 || _stakeBalance == 0){
-            return;
+    function calcReward(uint256 _totalStakeBalance, uint256 _stakeBalance) public view returns (uint256) {
+        require(_totalStakeBalance > 0, "total stake balance is not set");
+        if (totalReward == 0 || _stakeBalance == 0 ) {
+            return 0;
         }
-        stakerReward[_owner] = totalReward * _stakeBalance / totalStakeBalance;
+        return totalReward * _stakeBalance / _totalStakeBalance;
     }
 
-    function claim(uint64 amount) public {
-        require(stakerReward[msg.sender] >= amount, "insufficient balance");
+    function claim(uint64 _amount) public {
+        require(stakerReward[msg.sender] >= _amount, "insufficient balance");
 
-        sToken.safeTransferFrom(address(this), msg.sender,stakeAmount);
-        stakerReward[msg.sender] -= amount;
+        sToken.safeTransferFrom(address(this), msg.sender, _amount);
+        stakerReward[msg.sender] -= _amount;
     }
 }
