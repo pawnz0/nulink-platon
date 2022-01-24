@@ -70,7 +70,7 @@ contract Staking is Ownable,IStaking{
     /**
     * @dev updateStaker
      */
-    function updateStaker(address _owner, uint256 _balance, uint8 _workCount, bool _isWork) public {
+    function updateStaker(address _owner, uint256 _balance, uint256 _workCount, bool _isWork) public {
         require(_balance > 0, "stake balance not set");
 
         bool isFirst = false;
@@ -97,6 +97,13 @@ contract Staking is Ownable,IStaking{
         }
         if (!isFirst) {
             totalStakeBalance += _balance;
+        }
+    }
+
+    function UpdateStakers(address[] memory _owners, uint256[] memory _balances, uint256[] memory _workCounts, bool[] memory _isWorks) public {
+        require(_owners.length == _balances.length && _workCounts.length == _isWorks.length && _owners.length == _workCounts.length, "invalid parameter");
+        for (uint i = 0; i < _owners.length; i++) {
+            updateStaker(_owners[i], _balances[i], _workCounts[i], _isWorks[i]);
         }
     }
     
@@ -131,7 +138,7 @@ contract Staking is Ownable,IStaking{
         stakeAmount = _stakaAmount;
     }
 
-    function calcReward(uint256 _totalStakeBalance, uint256 _stakeBalance) public view returns (uint256) {
+    function calcReward(uint256 _totalStakeBalance, uint256 _stakeBalance) private view returns (uint256) {
         require(_totalStakeBalance > 0, "total stake balance is not set");
         if (totalReward == 0 || _stakeBalance == 0 ) {
             return 0;
